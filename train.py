@@ -9,21 +9,26 @@ from src.utils import load_net, load_data, eval_accuracy
 
 def get_args():
     argparser = argparse.ArgumentParser(description=__doc__)
-    argparser.add_argument('--gpuid', default='0,')
-    argparser.add_argument('--dataset', default='fashionmnist',
-                           help='dataset choosed, [fashionmnist] | cifar10')
+    argparser.add_argument('--gpuid',
+                          default='0,', help='gpu id, [0] ')
+    argparser.add_argument('--dataset', 
+                          default='fashionmnist', help='dataset, [fashionmnist] | cifar10')
     argparser.add_argument('--n_samples', type=int,
                            default=1000, help='training set size, [1000]')
     argparser.add_argument('--load_size', type=int,
                            default=1000, help='load size for dataset, [1000]')
+    argparser.add_argument('--optimizer', 
+                           default='sgd', help='optimizer, [sgd]')
     argparser.add_argument('--n_iters', type=int,
                            default=10000, help='number of iteration used to train nets, [10000]')
     argparser.add_argument('--batch_size', type=int,
                            default=1000, help='batch size, [1000]')
     argparser.add_argument('--learning_rate', type=float,
                            default=1e-1, help='learning rate')
-    argparser.add_argument('--model_file', default='fnn.pkl',
-                           help='filename to save the net')
+    argparser.add_argument('--momentum', type=float,
+                           default='0.0', help='momentum, [0.0]')
+    argparser.add_argument('--model_file', 
+                           default='fnn.pkl', help='filename to save the net, fnn.pkl')
 
     args = argparser.parse_args()
     if args.load_size > args.batch_size:
@@ -34,6 +39,13 @@ def get_args():
     print(json.dumps(vars(args), indent=2))
     return args
 
+def get_optimizer(net, args):
+    if args.optimizer == 'sgd':
+        return torch.optim.SGD(net.parameters(), lr=args.learning_rate, momentum=args.momentum)
+    elif args.optimizer == 'adam':
+        return torch.optim.Adam(net.parameters(), lr=args.learning_rate)
+    else:
+        raise ValueError('optimizer %s has not been supported'%(args.optimizer))
 
 def main():
     args = get_args()
@@ -43,7 +55,8 @@ def main():
                                           training_size=args.n_samples,
                                           batch_size=args.load_size)
     net = load_net(args.dataset)
-    optimizer = torch.optim.SGD(net.parameters(), lr=args.learning_rate)
+    optimizer = get_optimizer(net, args)
+    print(optimizer)
 
     print('===> Architecture:')
     print(net)
